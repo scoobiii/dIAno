@@ -7,14 +7,14 @@ AI/game architecture for governed execution, graph-based cognition and verifiabl
 ## Governança VUA + FlyWire
 
 - VUA: installed from `github:scoobiii/vua` in CI.
-- CI: lint + 100% governance coverage + VUA mock detector + VUA conformance + VUC proof gate.
-- Proof contract: `execution=true` + Ed25519 signature + input/output SHA-256 hashes.
+- CI: lint + 100% governance coverage + VUA mock detector/conformance + VUC execution-proof/no-fallback gates.
+- Proof contract: execution must be true, with a non-empty signature field and SHA-256 input/output hashes; the VUC gate validates the external execution-proof/no-fallback contract.
 - FlyWire source: `flyconnectome/flywire_annotations`, with release provenance tracked in architecture docs.
 - Graph rule: uma sinapse é uma aresta com origem, destino e proveniência; nunca uma saída sintética.
 
 ### Evolução automática
 
-O workflow de governança verifica e sincroniza este bloco e os documentos de arquitetura conforme o projeto evolui. Mudanças geradas passam por PR/CI.
+O workflow semanal de governança regenera este bloco do README e abre um PR quando houver drift. Ele não regenera automaticamente os documentos de arquitetura.
 
 <!-- VUA-GOVERNANCE:END -->
 
@@ -37,8 +37,11 @@ npm install
 npm run lint
 npm run test:coverage
 npm run test:vua
+npm run sync:docs
 ```
 
-O gate de cobertura é 100% para o módulo de governança instrumentado. O CI também roda os gates do VUA e os testes de prova/no-fallback do VUC.
+O gate de cobertura é **100%** para todos os arquivos em `src/governance/**/*.ts`, cobrindo statements, branches, functions e lines. O CI também roda os gates do VUA e os testes de execução comprovada/no-fallback do VUC.
+
+A proteção administrativa de `main` é versionada em `ops/github/main-ruleset.json` e aplicada/verificada pelo script `ops/github/apply-main-ruleset.sh` usando `gh`. O workflow `Main Rules Integrity` valida a policy versionada; ele não afirma sozinho o estado administrativo efetivo do GitHub.
 
 **Assinatura:** GoS3
