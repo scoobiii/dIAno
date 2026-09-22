@@ -11,7 +11,8 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:vua": "node scripts/vua-governance-gate.mjs"
+    "test:vua": "node scripts/vua-governance-gate.mjs",
+    "sync:docs": "node scripts/sync-governance-docs.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
