@@ -39,16 +39,17 @@ export class DimensionalRenderer {
     const vy = h * 0.28; // Vanishing point Y
     const groundY = engine.groundY;
 
-    // 1. Skybox with Deep Space & Distant Cyber Horizon
+    // 1. Skybox with Deep Space & Distant Horizon matching active Epoch
+    const epoch = engine.environmentEvolution.currentEpoch;
     const skyGrad = ctx.createLinearGradient(0, 0, 0, vy);
-    skyGrad.addColorStop(0, '#040711');
-    skyGrad.addColorStop(0.7, '#080e20');
-    skyGrad.addColorStop(1, '#0f172a');
+    skyGrad.addColorStop(0, epoch.skyGradients[0]);
+    skyGrad.addColorStop(0.5, epoch.skyGradients[1]);
+    skyGrad.addColorStop(1, epoch.skyGradients[3]);
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, vy);
 
     // Distant Neon Horizon Glow
-    ctx.strokeStyle = '#38bdf844';
+    ctx.strokeStyle = epoch.horizonGlow;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(0, vy);
@@ -80,13 +81,13 @@ export class DimensionalRenderer {
     const trackWidthAtCamera = w * 0.82;
     const halfW = trackWidthAtCamera * 0.5;
 
-    // Longitudinal Rails radiating from Vanishing Point
+    // Longitudinal Rails radiating from Vanishing Point with Epoch Colors
     const rails = [
-      { xOffset: -halfW, color: '#f43f5e', glow: '#f43f5e', width: 2.5 }, // Outer Left (Rose)
-      { xOffset: -halfW * 0.55, color: '#0284c7', glow: '#0284c7', width: 1.2 }, // Mid Left
-      { xOffset: 0, color: '#38bdf8', glow: '#38bdf8', width: 1.8, dashed: true }, // Center Dash
-      { xOffset: halfW * 0.55, color: '#0284c7', glow: '#0284c7', width: 1.2 }, // Mid Right
-      { xOffset: halfW, color: '#06b6d4', glow: '#06b6d4', width: 2.5 }, // Outer Right (Cyan)
+      { xOffset: -halfW, color: epoch.railColors.left, glow: epoch.railColors.left, width: 2.5 }, // Outer Left
+      { xOffset: -halfW * 0.55, color: epoch.railColors.center, glow: epoch.railColors.center, width: 1.2 }, // Mid Left
+      { xOffset: 0, color: epoch.railColors.center, glow: epoch.railColors.center, width: 1.8, dashed: true }, // Center Dash
+      { xOffset: halfW * 0.55, color: epoch.railColors.center, glow: epoch.railColors.center, width: 1.2 }, // Mid Right
+      { xOffset: halfW, color: epoch.railColors.right, glow: epoch.railColors.right, width: 2.5 }, // Outer Right
     ];
 
     for (const rail of rails) {

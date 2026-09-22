@@ -12,10 +12,13 @@ import {
 } from '../types/game';
 import { ArchitectAI } from './architectAI';
 import { DimensionalRenderer } from './dimensionalRenderer';
+import { EnvironmentEpoch, EnvironmentEvolutionManager, EVOLUTIONARY_EPOCHS } from './environmentEvolution';
 import { NeuralNetwork } from './neuralNetwork';
 import { OptimizerAI } from './optimizerAI';
 import { soundEngine } from './soundEngine';
 import { SprintManager } from './sprintManager';
+import { VirtualFlyBrainEngine } from './virtualFlyBrain';
+import { VUAConnectorAI } from './vuaConnectorAI';
 
 export interface Particle {
   x: number;
@@ -57,6 +60,15 @@ export class GameEngine {
 
   // Automated Difficulty Sprints Manager
   public sprintManager: SprintManager = new SprintManager();
+
+  // Evolutionary Planetary Environments Manager
+  public environmentEvolution: EnvironmentEvolutionManager = new EnvironmentEvolutionManager();
+
+  // Drosophila Connectome Biocomputing Engine (VirtualFlyBrain)
+  public virtualFlyBrain: VirtualFlyBrainEngine = new VirtualFlyBrainEngine();
+
+  // VUA Connector AI (Vortex Agent Governance & GitHub PR / Pages Automation)
+  public vuaConnector: VUAConnectorAI;
 
   // Physics constants
   public baseSpeed: number = 7.0;
@@ -129,6 +141,7 @@ export class GameEngine {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D context not supported');
     this.ctx = ctx;
+    this.vuaConnector = new VUAConnectorAI(this.virtualFlyBrain);
 
     this.initGame();
   }
@@ -148,6 +161,22 @@ export class GameEngine {
 
   public toggleAutoSprint(): boolean {
     return this.sprintManager.toggleAutoSprint();
+  }
+
+  public setEnvironmentEpoch(index: number): void {
+    const epoch = this.environmentEvolution.setEpoch(index);
+    this.applyEnvironmentEpoch(epoch);
+  }
+
+  public toggleAutoEpochEvolution(): boolean {
+    return this.environmentEvolution.toggleAutoEvolution();
+  }
+
+  public applyEnvironmentEpoch(epoch: EnvironmentEpoch): void {
+    this.gravity = epoch.gravity;
+    this.jumpStrength = epoch.jumpStrength;
+    this.screenShake = 10;
+    soundEngine.playDimensionWarp(this.dimension);
   }
 
   public emitSprintCelebrationParticles(): void {
@@ -356,6 +385,15 @@ export class GameEngine {
   }
 
   private updatePhysics(): void {
+    // Automated Environmental Planetary Epoch Evolution
+    const evolvedEpoch = this.environmentEvolution.evaluateEvolution(
+      this.currentGeneration,
+      this.sprintManager.currentSprintIndex
+    );
+    if (evolvedEpoch) {
+      this.applyEnvironmentEpoch(evolvedEpoch);
+    }
+
     // Automated Difficulty Sprints Progression Update
     const sprintUpdate = this.sprintManager.update(this.score);
     if (sprintUpdate.didAdvance && sprintUpdate.newSprint) {
@@ -368,6 +406,16 @@ export class GameEngine {
       this.screenShake = 12;
       this.gymStepInfo.episodeReward += 40.0; // Gym evolutionary bonus
       this.emitSprintCelebrationParticles();
+
+      // VUA Connector AI evaluation using VFB connectome topology
+      this.vuaConnector.evaluateEvolutionaryProgress(
+        this.currentGeneration,
+        this.score,
+        this.bestScore,
+        this.sprintManager.currentSprintIndex,
+        this.environmentEvolution.currentEpoch.name,
+        true
+      );
     }
 
     // Dynamic speed based on sprint curriculum or progressive scaling
@@ -388,6 +436,22 @@ export class GameEngine {
 
     if (this.score % 500 === 0) {
       soundEngine.playMilestone();
+    }
+
+    if (this.score % 250 === 0) {
+      this.vuaConnector.evaluateEvolutionaryProgress(
+        this.currentGeneration,
+        this.score,
+        this.bestScore,
+        this.sprintManager.currentSprintIndex,
+        this.environmentEvolution.currentEpoch.name,
+        this.score >= this.bestScore && this.score > 200
+      );
+    }
+
+    // Emit Epoch-specific atmospheric particles
+    if (Math.random() < 0.28) {
+      this.emitEpochAmbientParticles();
     }
 
     // 4D Hyperspace Rotation & Chrono History buffer
@@ -439,6 +503,7 @@ export class GameEngine {
         obs.passed = true;
         this.gymStepInfo.lastReward = 2.0;
         this.gymStepInfo.episodeReward += 2.0;
+        this.virtualFlyBrain.triggerRewardEvent(this.score);
       }
 
       // Remove offscreen
@@ -556,6 +621,11 @@ export class GameEngine {
           dino.fitness = dino.score + dino.jumpCount * 2 + dino.duckCount * 3;
           aliveCount--;
 
+          // Biocomputing feedback to Drosophila connectome
+          if (dino === this.championDino || dino.id === 0) {
+            this.virtualFlyBrain.triggerCollisionPenalty();
+          }
+
           // Notify Architect AI of collision physics
           this.architectAI.recordDeath(
             obs,
@@ -669,6 +739,34 @@ export class GameEngine {
       this.cvPerception.opticalFlowSpeed = Number(this.currentSpeed.toFixed(1));
     }
 
+    // VirtualFlyBrain Drosophila Connectome evaluation for Champion / Leading Dino
+    if (dino === this.championDino || dino.id === 0) {
+      const oW = nearestObs ? nearestObs.width : 20;
+      const oH = nearestObs ? nearestObs.height : 20;
+      const oAlt = nearestObs ? Math.max(0, this.groundY - (nearestObs.y + nearestObs.height)) : 0;
+      const vfbDecision = this.virtualFlyBrain.processSensoryTick(
+        dist1,
+        oW,
+        oH,
+        oAlt,
+        this.currentSpeed,
+        dino.y,
+        dino.isJumping
+      );
+
+      // If Giant Fiber emergency reflex is triggered, execute immediate reflex jump!
+      if (vfbDecision.giantFiberSpike && !dino.isJumping) {
+        dino.vy = this.jumpStrength;
+        dino.isJumping = true;
+        dino.jumpCount++;
+        dino.lastAction = 'JUMP';
+        this.emitSparks(dino.x + 12, dino.y + dino.height, '#ef4444', 8);
+        if (dino === this.championDino) this.gymStepInfo.actionTaken = 1;
+        soundEngine.playJump();
+        return;
+      }
+    }
+
     // Decision logic
     if (jumpOut > 0.55 && jumpOut > duckOut && !dino.isJumping) {
       dino.vy = this.jumpStrength;
@@ -775,6 +873,68 @@ export class GameEngine {
     }
   }
 
+  public emitEpochAmbientParticles(): void {
+    const epoch = this.environmentEvolution.currentEpoch;
+    const pType = epoch.ambientParticles;
+
+    if (pType === 'volcanic_ash') {
+      this.particles.push({
+        x: Math.random() * this.width,
+        y: this.groundY - Math.random() * 45,
+        vx: (Math.random() - 0.5) * 1.5 - this.currentSpeed * 0.2,
+        vy: -(Math.random() * 1.8 + 0.6),
+        color: Math.random() < 0.65 ? '#f97316' : '#ea580c',
+        size: Math.random() * 2.5 + 1.0,
+        life: 0,
+        maxLife: 40,
+      });
+    } else if (pType === 'neon_rain') {
+      this.particles.push({
+        x: Math.random() * this.width,
+        y: 0,
+        vx: -1.2,
+        vy: Math.random() * 6 + 6,
+        color: Math.random() < 0.5 ? '#38bdf8' : '#f43f5e',
+        size: Math.random() * 2 + 1,
+        life: 0,
+        maxLife: 35,
+      });
+    } else if (pType === 'martian_dust') {
+      this.particles.push({
+        x: this.width,
+        y: this.groundY - Math.random() * 80,
+        vx: -(this.currentSpeed * 0.8 + Math.random() * 3),
+        vy: (Math.random() - 0.5) * 1.4,
+        color: '#fb7185',
+        size: Math.random() * 2.2 + 0.8,
+        life: 0,
+        maxLife: 45,
+      });
+    } else if (pType === 'quantum_fluctuations') {
+      this.particles.push({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        vx: (Math.random() - 0.5) * 2.5,
+        vy: (Math.random() - 0.5) * 2.5,
+        color: Math.random() < 0.5 ? '#10b981' : '#34d399',
+        size: Math.random() * 2.8 + 1.2,
+        life: 0,
+        maxLife: 22,
+      });
+    } else if (pType === 'relativistic_plasma') {
+      this.particles.push({
+        x: Math.random() * this.width,
+        y: Math.random() * (this.groundY * 0.8),
+        vx: -(this.currentSpeed * 0.4 + Math.random() * 2.5),
+        vy: (Math.random() - 0.5) * 3,
+        color: Math.random() < 0.5 ? '#eab308' : '#c084fc',
+        size: Math.random() * 3 + 1.5,
+        life: 0,
+        maxLife: 30,
+      });
+    }
+  }
+
   public render(): void {
     const ctx = this.ctx;
     const w = this.width;
@@ -823,11 +983,14 @@ export class GameEngine {
   }
 
   private render2DScene(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    // 1. Background gradient (Cyberpunk 2027 deep space)
+    const epoch = this.environmentEvolution.currentEpoch;
+
+    // 1. Background gradient dynamically adapting to Evolutionary Planetary Epoch
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#060a12');
-    bgGrad.addColorStop(0.7, '#0b1120');
-    bgGrad.addColorStop(1, '#0f172a');
+    bgGrad.addColorStop(0, epoch.skyGradients[0]);
+    bgGrad.addColorStop(0.35, epoch.skyGradients[1]);
+    bgGrad.addColorStop(0.7, epoch.skyGradients[2]);
+    bgGrad.addColorStop(1, epoch.skyGradients[3]);
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
@@ -882,10 +1045,11 @@ export class GameEngine {
   }
 
   private renderCyberGrid(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    const epoch = this.environmentEvolution.currentEpoch;
     const gy = this.groundY;
 
-    // Solid Neon Horizon Divider
-    ctx.strokeStyle = '#38bdf8';
+    // Solid Neon Horizon Divider matching epoch horizon glow
+    ctx.strokeStyle = epoch.horizonGlow;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, gy);
@@ -893,9 +1057,9 @@ export class GameEngine {
     ctx.stroke();
 
     // Ground glow
-    ctx.shadowColor = '#38bdf8';
+    ctx.shadowColor = epoch.horizonGlow;
     ctx.shadowBlur = 8;
-    ctx.strokeStyle = '#0284c7';
+    ctx.strokeStyle = epoch.railColors.center;
     ctx.beginPath();
     ctx.moveTo(0, gy);
     ctx.lineTo(w, gy);
@@ -1245,6 +1409,25 @@ export class GameEngine {
 
     ctx.fillStyle = '#cbd5e1';
     ctx.fillText(`CRITIC V(s): +${this.cvPerception.criticValueEstimate.toFixed(2)}`, 16, 52);
+
+    // Epoch & Drosophila connectome status banner in top-center
+    const epoch = this.environmentEvolution.currentEpoch;
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#0f172ae6';
+    ctx.fillRect(w / 2 - 135, 10, 270, 24);
+    ctx.strokeStyle = epoch.badgeColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w / 2 - 135, 10, 270, 24);
+
+    ctx.fillStyle = epoch.badgeColor;
+    ctx.textAlign = 'center';
+    const gfActive = this.virtualFlyBrain.state.giantFiberTriggered;
+    ctx.fillText(
+      `ÉPOCA: ${epoch.name.toUpperCase()} (g=${epoch.gravity}g) | VFB: ${gfActive ? '⚡GF ESCAPE' : 'ONLINE'}`,
+      w / 2,
+      25
+    );
+    ctx.textAlign = 'left';
 
     // Score Board
     ctx.font = 'bold 16px monospace';

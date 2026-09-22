@@ -1,15 +1,19 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Terminal, Info, Play, Pause, Sparkles, Cpu, Skull, Volume2, VolumeX, Download, Eye, Layers, Box } from 'lucide-react';
+import { Terminal, Info, Play, Pause, Sparkles, Cpu, Skull, Volume2, VolumeX, Download, Eye, Layers, Box, GitPullRequest, Brain } from 'lucide-react';
 import { GameEngine } from './engine/gameEngine';
 import { DimensionMode, GameMode } from './types/game';
 import { soundEngine } from './engine/soundEngine';
 import { DIFFICULTY_SPRINTS } from './engine/sprintManager';
+import { EVOLUTIONARY_EPOCHS } from './engine/environmentEvolution';
 import { TriCoreDashboard } from './components/TriCoreDashboard';
 import { NeuralNetworkVisualizer } from './components/NeuralNetworkVisualizer';
 import { EvolutionStats } from './components/EvolutionStats';
 import { GameControls } from './components/GameControls';
 import { TacticalBriefingModal } from './components/TacticalBriefingModal';
 import { PyTorchCodeModal } from './components/PyTorchCodeModal';
+import { VirtualFlyBrainVisualizer } from './components/VirtualFlyBrainVisualizer';
+import { GitHubOpsModal } from './components/GitHubOpsModal';
+import { VUAConnectorDashboard } from './components/VUAConnectorDashboard';
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -23,6 +27,8 @@ export default function App() {
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isBriefingOpen, setIsBriefingOpen] = useState<boolean>(false);
   const [isPyTorchModalOpen, setIsPyTorchModalOpen] = useState<boolean>(false);
+  const [isGitHubOpsOpen, setIsGitHubOpsOpen] = useState<boolean>(false);
+  const [showVUAPanel, setShowVUAPanel] = useState<boolean>(true);
   const [showVisionHeatmap, setShowVisionHeatmap] = useState<boolean>(true);
   const [showBoundingBoxes, setShowBoundingBoxes] = useState<boolean>(true);
 
@@ -102,6 +108,21 @@ export default function App() {
     if (engineRef.current) {
       const nextIndex = (engineRef.current.sprintManager.currentSprintIndex + 1) % 6;
       engineRef.current.setSprint(nextIndex);
+      setTick((t) => (t + 1) % 10000);
+    }
+  }, []);
+
+  // Environmental Evolutionary Epoch handlers
+  const handleSetEpoch = useCallback((index: number) => {
+    if (engineRef.current) {
+      engineRef.current.setEnvironmentEpoch(index);
+      setTick((t) => (t + 1) % 10000);
+    }
+  }, []);
+
+  const handleToggleAutoEpoch = useCallback(() => {
+    if (engineRef.current) {
+      engineRef.current.toggleAutoEpochEvolution();
       setTick((t) => (t + 1) % 10000);
     }
   }, []);
@@ -259,6 +280,30 @@ export default function App() {
             </button>
 
             <button
+              id="btn-toggle-vua-connector"
+              type="button"
+              onClick={() => setShowVUAPanel((prev) => !prev)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-mono font-bold transition-all ${
+                showVUAPanel
+                  ? 'bg-purple-950/80 border-purple-500/60 text-purple-300 shadow-sm shadow-purple-500/20'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Cpu className="h-3.5 w-3.5 text-purple-400" />
+              <span className="hidden sm:inline">IA Conectora VUA</span>
+            </button>
+
+            <button
+              id="btn-open-github-ops"
+              type="button"
+              onClick={() => setIsGitHubOpsOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 px-3 py-1.5 text-xs font-mono text-cyan-300 hover:text-white transition-all"
+            >
+              <GitPullRequest className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">GitHub Pages & PR</span>
+            </button>
+
+            <button
               id="btn-open-briefing"
               type="button"
               onClick={() => setIsBriefingOpen(true)}
@@ -302,6 +347,16 @@ export default function App() {
           onSetSprint={handleSetSprint}
           onToggleAutoSprint={handleToggleAutoSprint}
           onAdvanceSprint={handleAdvanceSprint}
+          epochState={
+            engine?.environmentEvolution.getState() || {
+              currentEpochIndex: 0,
+              currentEpoch: EVOLUTIONARY_EPOCHS[0],
+              isAutoEvolutionEnabled: true,
+            }
+          }
+          onSetEpoch={handleSetEpoch}
+          onToggleAutoEpoch={handleToggleAutoEpoch}
+          onOpenGitHubOps={() => setIsGitHubOpsOpen(true)}
           isPaused={isPaused}
           onTogglePause={handleTogglePause}
           speedMultiplier={speedMultiplier}
@@ -354,6 +409,25 @@ export default function App() {
           onToggleBoundingBoxes={handleToggleBoundingBoxes}
         />
 
+        {/* Drosophila Biological Connectome (Virtual Fly Brain) Biocomputing */}
+        {engine?.virtualFlyBrain && (
+          <VirtualFlyBrainVisualizer
+            vfbState={engine.virtualFlyBrain.state}
+            lastAction={championDino?.lastAction || 'RUN'}
+          />
+        )}
+
+        {/* IA Conectora VUA (Vortex Agent Governance + VirtualFlyBrain Connectome Topology) */}
+        {showVUAPanel && engine?.vuaConnector && (
+          <VUAConnectorDashboard
+            vuaConnector={engine.vuaConnector}
+            currentGeneration={engine.currentGeneration}
+            currentScore={engine.score}
+            bestScore={engine.bestScore}
+            currentEpochName={engine.environmentEvolution.currentEpoch.name}
+          />
+        )}
+
         {/* Lower Row: Neural Synapse Inspector + Evolutionary History */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <NeuralNetworkVisualizer
@@ -380,13 +454,21 @@ export default function App() {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={() => setIsGitHubOpsOpen(true)}
+              className="text-cyan-400 hover:underline flex items-center gap-1"
+            >
+              <GitPullRequest className="h-3 w-3" /> CI/CD & GitHub Pages
+            </button>
+            <span>•</span>
+            <button
+              type="button"
               onClick={() => setIsPyTorchModalOpen(true)}
               className="text-cyan-400 hover:underline flex items-center gap-1"
             >
-              <Download className="h-3 w-3" /> Baixar PyTorch Codebase (.ZIP)
+              <Download className="h-3 w-3" /> PyTorch Codebase (.ZIP)
             </button>
             <span>•</span>
-            <span>Ivan Seidel Homage</span>
+            <span className="text-purple-400">Virtual Fly Brain</span>
             <span>•</span>
             <span className="text-emerald-400 font-semibold">Active Co-Evolution</span>
           </div>
@@ -405,6 +487,15 @@ export default function App() {
       <PyTorchCodeModal
         isOpen={isPyTorchModalOpen}
         onClose={() => setIsPyTorchModalOpen(false)}
+      />
+
+      {/* GitHub CI/CD & Dynamic Pages Modal */}
+      <GitHubOpsModal
+        isOpen={isGitHubOpsOpen}
+        onClose={() => setIsGitHubOpsOpen(false)}
+        currentGeneration={engine?.currentGeneration ?? 1}
+        bestScore={engine?.bestScore ?? 0}
+        currentEpochName={engine?.environmentEvolution.currentEpoch.name ?? 'Cretáceo Primordial'}
       />
     </div>
   );

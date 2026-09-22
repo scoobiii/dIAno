@@ -16,9 +16,12 @@ import {
   Zap,
   ChevronRight,
   Gauge,
+  Globe,
+  GitPullRequest,
 } from 'lucide-react';
 import { DimensionMode, GameMode, SprintState } from '../types/game';
 import { DIFFICULTY_SPRINTS } from '../engine/sprintManager';
+import { EnvironmentEpoch, EVOLUTIONARY_EPOCHS } from '../engine/environmentEvolution';
 
 interface GameControlsProps {
   mode: GameMode;
@@ -29,6 +32,14 @@ interface GameControlsProps {
   onSetSprint: (index: number) => void;
   onToggleAutoSprint: () => void;
   onAdvanceSprint: () => void;
+  epochState?: {
+    currentEpochIndex: number;
+    currentEpoch: EnvironmentEpoch;
+    isAutoEvolutionEnabled: boolean;
+  };
+  onSetEpoch?: (index: number) => void;
+  onToggleAutoEpoch?: () => void;
+  onOpenGitHubOps?: () => void;
   isPaused: boolean;
   onTogglePause: () => void;
   speedMultiplier: number;
@@ -50,6 +61,10 @@ export const GameControls: React.FC<GameControlsProps> = ({
   onSetSprint,
   onToggleAutoSprint,
   onAdvanceSprint,
+  epochState,
+  onSetEpoch,
+  onToggleAutoEpoch,
+  onOpenGitHubOps,
   isPaused,
   onTogglePause,
   speedMultiplier,
@@ -328,6 +343,100 @@ export const GameControls: React.FC<GameControlsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Row 3: Planetary Evolutionary Epochs (2D, 3D, 4D Environment Evolution) */}
+      {epochState && onSetEpoch && (
+        <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 shadow-lg backdrop-blur flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+            <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold text-xs"
+                style={{
+                  borderColor: epochState.currentEpoch.badgeColor + '66',
+                  backgroundColor: epochState.currentEpoch.badgeColor + '18',
+                  color: epochState.currentEpoch.badgeColor,
+                }}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                <span>{epochState.currentEpoch.name}</span>
+                <span className="text-[10px] opacity-80">(Gravidade {epochState.currentEpoch.gravity}g)</span>
+              </div>
+
+              {onToggleAutoEpoch && (
+                <button
+                  id="btn-toggle-auto-epoch"
+                  type="button"
+                  onClick={onToggleAutoEpoch}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all ${
+                    epochState.isAutoEvolutionEnabled
+                      ? 'bg-purple-950/60 border-purple-500/50 text-purple-300'
+                      : 'bg-slate-900 border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      epochState.isAutoEvolutionEnabled ? 'bg-purple-400 animate-pulse' : 'bg-slate-500'
+                    }`}
+                  />
+                  <span>{epochState.isAutoEvolutionEnabled ? 'EVOLUÇÃO ÉPOCA: AUTO' : 'ÉPOCA: FIXA'}</span>
+                </button>
+              )}
+
+              <span className="text-[11px] text-slate-400 hidden lg:inline">
+                Atmosfera: <strong className="text-slate-200">{epochState.currentEpoch.visualFlavor}</strong>
+              </span>
+            </div>
+
+            {onOpenGitHubOps && (
+              <button
+                id="btn-open-github-ops-controls"
+                type="button"
+                onClick={onOpenGitHubOps}
+                className="flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 text-[11px] font-bold text-cyan-300 hover:text-white transition-all shadow-sm"
+              >
+                <GitPullRequest className="h-3.5 w-3.5 text-cyan-400" />
+                <span>CI/CD • GitHub Pages</span>
+              </button>
+            )}
+          </div>
+
+          {/* Epoch Selector Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5">
+            {EVOLUTIONARY_EPOCHS.map((ep, idx) => {
+              const isCurrent = epochState.currentEpochIndex === idx;
+              return (
+                <button
+                  key={ep.id}
+                  id={`btn-epoch-${ep.id}`}
+                  type="button"
+                  onClick={() => onSetEpoch(idx)}
+                  className={`flex flex-col p-1.5 rounded-lg border text-left transition-all ${
+                    isCurrent
+                      ? 'border-purple-500/70 bg-purple-950/40 text-purple-200 shadow-sm shadow-purple-500/20'
+                      : 'border-slate-800/80 bg-slate-900/40 text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold">{ep.id.toUpperCase()}</span>
+                    <span
+                      className="px-1 rounded text-[9px] font-mono font-bold"
+                      style={{ color: ep.badgeColor }}
+                    >
+                      {ep.gravity}g
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-semibold truncate text-slate-200 mt-0.5">
+                    {ep.name}
+                  </div>
+                  <div className="text-[9.5px] text-slate-500 truncate mt-0.5">
+                    Partículas: {ep.ambientParticles.replace('_', ' ')}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Touch & Manual Controls for Human / Co-Pilot Mode */}
       {mode !== 'tri_ai' && (
