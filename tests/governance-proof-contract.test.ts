@@ -13,6 +13,7 @@ describe('governance proof contract', () => {
     expect(graphEdge('neuron:A','neuron:B','synapse','flywire_annotations@3.1.0').relation).toBe('synapse');
     expect(() => graphEdge('neuron:A','neuron:A','synapse','x')).toThrow();
     expect(() => graphEdge('','','','')).toThrow();
+    expect(() => graphEdge('neuron:A','neuron:B','synapse','')).toThrow();
   });
   it('rejects known synthetic markers', () => {
     expect(rejectSyntheticMarker('real connector execution')).toBe(true);
