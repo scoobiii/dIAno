@@ -1,0 +1,6 @@
+{
+  "name": "IAMDinosaur 2027: Tri-Core Neural Evolution (2D/3D/4D)",
+  "description": "Versão 2027 multiagente do IAMDinosaur com IA Criadora (WGAN-GP), IA Superadora (PPO híbrido) e IA Jogadora (Gym/Visão), com sprints de dificuldade automatizados e ambientes 2D, 3D e 4D.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
