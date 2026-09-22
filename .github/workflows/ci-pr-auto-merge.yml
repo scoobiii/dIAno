@@ -28,7 +28,7 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: npm ci || npm install
+        run: npm install --no-audit --no-fund
 
       - name: Quality Gate 1 - TypeScript Verification & Lint
         run: npm run lint
