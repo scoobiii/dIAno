@@ -19,6 +19,7 @@ import { soundEngine } from './soundEngine';
 import { SprintManager } from './sprintManager';
 import { VirtualFlyBrainEngine } from './virtualFlyBrain';
 import { VUAConnectorAI } from './vuaConnectorAI';
+import { DinoRenderer } from './dinoRenderer';
 
 export interface Particle {
   x: number;
@@ -1236,78 +1237,7 @@ export class GameEngine {
   }
 
   private drawCyberDino(ctx: CanvasRenderingContext2D, dino: Dino, isLeader: boolean): void {
-    const x = dino.x;
-    const y = dino.y;
-    const w = dino.width;
-    const h = dino.height;
-
-    // Glowing outline
-    if (isLeader) {
-      ctx.shadowColor = dino.color;
-      ctx.shadowBlur = 10;
-    }
-
-    ctx.fillStyle = dino.color;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-
-    if (dino.isDucking) {
-      // Aerodynamic crouching sprint pose
-      ctx.fillRect(x, y + 6, w, h - 6);
-      ctx.strokeRect(x, y + 6, w, h - 6);
-
-      // Jet Thruster flame on duck
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(x - 8, y + 10, 8, 8);
-
-      // Laser Visor
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + w - 10, y + 10, 8, 4);
-    } else {
-      // Upright Cyber T-Rex pose
-      // Body torso
-      ctx.fillRect(x + 10, y + 14, w - 16, h - 26);
-      ctx.strokeRect(x + 10, y + 14, w - 16, h - 26);
-
-      // Head
-      ctx.fillRect(x + 20, y, 22, 16);
-      ctx.strokeRect(x + 20, y, 22, 16);
-
-      // Visor Glow
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 32, y + 4, 8, 4);
-
-      // Arms
-      ctx.fillStyle = dino.color;
-      ctx.fillRect(x + 30, y + 20, 8, 4);
-
-      // Legs / Thrusters
-      if (dino.isJumping) {
-        // Tucked legs + plasma thruster
-        ctx.fillRect(x + 14, y + h - 12, 6, 8);
-        ctx.fillRect(x + 24, y + h - 12, 6, 8);
-
-        // Blue plasma thrust
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.moveTo(x + 12, y + h - 4);
-        ctx.lineTo(x + 27, y + h + 12);
-        ctx.lineTo(x + 32, y + h - 4);
-        ctx.fill();
-      } else {
-        // Running legs articulation
-        const legStep = Math.sin(Date.now() * 0.02 * (this.currentSpeed / 7));
-        ctx.fillRect(x + 12, y + h - 12, 6, 12 + legStep * 4);
-        ctx.fillRect(x + 24, y + h - 12, 6, 12 - legStep * 4);
-      }
-    }
-
-    // Champion Crown / ID tag
-    if (isLeader) {
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 10px monospace';
-      ctx.fillText(`CHAMPION #0`, x - 2, y - 8);
-    }
+    DinoRenderer.drawDinosaur(ctx, dino, isLeader, this.currentSpeed, 1.0);
   }
 
   private renderParticles(ctx: CanvasRenderingContext2D): void {
