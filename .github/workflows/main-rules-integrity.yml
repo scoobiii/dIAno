@@ -1,4 +1,4 @@
-name: Main Rules Integrity
+name: Main Rules Policy Integrity
 
 on:
   push:
@@ -15,32 +15,32 @@ jobs:
     name: Main Rules Integrity
     runs-on: ubuntu-latest
     steps:
-      - name: Verify active fail-closed rules
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
+      - name: Checkout policy
+        uses: actions/checkout@v4
+
+      - name: Verify fail-closed rules policy
         run: |
           set -euo pipefail
-
-          JSON=$(gh api "repos/$REPO/rules/branches/main")
-          echo "$JSON" | jq .
-
-          has_rule() {
-            echo "$JSON" | jq -e --arg t "$1" '.[] | select(.type == $t)' >/dev/null
-          }
-
-          has_rule "pull_request" || { echo "BLOCK: pull_request rule missing"; exit 1; }
-          has_rule "required_status_checks" || { echo "BLOCK: required_status_checks rule missing"; exit 1; }
-          has_rule "non_fast_forward" || { echo "BLOCK: non_fast_forward rule missing"; exit 1; }
-          has_rule "deletion" || { echo "BLOCK: deletion rule missing"; exit 1; }
-
-          echo "$JSON" | jq -e '
-            any(.[]; .type == "required_status_checks" and
+          POLICY=ops/github/main-ruleset.json
+          test -f "$POLICY" || { echo "BLOCK: policy file missing"; exit 1; }
+          jq -e '
+            .name == "dIAno-main-fail-closed" and
+            .target == "branch" and
+            .enforcement == "active" and
+            (.bypass_actors | length == 0) and
+            (.conditions.ref_name.include | index("refs/heads/main")) and
+            any(.rules[]; .type == "pull_request" and
+              .parameters.required_approving_review_count == 1 and
+              .parameters.dismiss_stale_reviews_on_push == true and
+              .parameters.required_review_thread_resolution == true) and
+            any(.rules[]; .type == "required_status_checks" and
+              .parameters.strict_required_status_checks_policy == true and
               any(.parameters.required_status_checks[]?;
-                .context == "Required Governance Checks"))
-          ' >/dev/null || {
-            echo "BLOCK: Required Governance Checks is not required."
+                .context == "Required Governance Checks")) and
+            any(.rules[]; .type == "non_fast_forward") and
+            any(.rules[]; .type == "deletion")
+          ' "$POLICY" >/dev/null || {
+            echo "BLOCK: fail-closed rules policy is invalid."
             exit 1
           }
-
-          echo "PASS: main is governed by fail-closed rules."
+          echo "PASS: main fail-closed rules policy is valid."
