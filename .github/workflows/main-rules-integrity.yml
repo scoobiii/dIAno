@@ -1,0 +1,46 @@
+name: Main Rules Integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-main-rules:
+    name: Main Rules Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify active fail-closed rules
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          JSON=$(gh api "repos/$REPO/rules/branches/main")
+          echo "$JSON" | jq .
+
+          has_rule() {
+            echo "$JSON" | jq -e --arg t "$1" '.[] | select(.type == $t)' >/dev/null
+          }
+
+          has_rule "pull_request" || { echo "BLOCK: pull_request rule missing"; exit 1; }
+          has_rule "required_status_checks" || { echo "BLOCK: required_status_checks rule missing"; exit 1; }
+          has_rule "non_fast_forward" || { echo "BLOCK: non_fast_forward rule missing"; exit 1; }
+          has_rule "deletion" || { echo "BLOCK: deletion rule missing"; exit 1; }
+
+          echo "$JSON" | jq -e '
+            any(.[]; .type == "required_status_checks" and
+              any(.parameters.required_status_checks[]?;
+                .context == "Required Governance Checks"))
+          ' >/dev/null || {
+            echo "BLOCK: Required Governance Checks is not required."
+            exit 1
+          }
+
+          echo "PASS: main is governed by fail-closed rules."
