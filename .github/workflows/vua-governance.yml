@@ -1,0 +1,73 @@
+name: dIAno — VUA governance, FlyWire provenance and VUC proof
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  governance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout dIAno
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dIAno + VUA
+        run: npm install --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: 100% governance coverage
+        run: npm run test:coverage
+
+      - name: VUA mock detector + conformance
+        run: npm run test:vua
+
+      - name: VUC execution-proof and no-fallback gates
+        run: |
+          git clone --depth 1 https://github.com/scoobiii/vuc.git /tmp/vuc
+          cd /tmp/vuc
+          npm install --no-audit --no-fund
+          npm run test:drex:no-fallback
+          npm run test:drex-phase2
+
+      - name: Sync generated governance docs
+        run: npm run sync:docs
+
+      - name: Verify docs are deterministic
+        run: git diff --exit-code -- README.md
+
+  docs-sync:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run sync:docs
+      - name: Create PR when docs drift
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "docs: synchronize VUA governance state"
+          title: "docs: synchronize VUA governance state"
+          body: |
+            Automated governance-document synchronization.
+            VUA/VUC/FlyWire provenance is refreshed without direct merge.
+          branch: automation/vua-governance-docs
+          delete-branch: true

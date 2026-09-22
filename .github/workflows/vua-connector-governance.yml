@@ -34,11 +34,10 @@ jobs:
       - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install Verified Dependencies
-        run: npm ci || npm install
+        run: npm install --no-audit --no-fund
 
       - name: Gate 1 - TypeScript Verification & Static Analysis
         run: npm run lint
@@ -121,8 +120,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install & Build
         run: |
