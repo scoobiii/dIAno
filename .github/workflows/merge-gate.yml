@@ -1,0 +1,75 @@
+name: Merge Gate — all governance checks required
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  merge-gate:
+    name: Required Governance Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Wait for and verify required checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          REQUIRED=(
+            "dIAno — VUA governance, FlyWire provenance and VUC proof / governance"
+            "VUA Connector AI & Vortex Governance CI/CD / Vortex Agent Governance & VFB Connectome Gates"
+          )
+
+          for attempt in $(seq 1 30); do
+            echo "Check aggregation attempt $attempt/30"
+            JSON=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100")
+
+            all_done=true
+            all_pass=true
+
+            for required in "${REQUIRED[@]}"; do
+              conclusion=$(echo "$JSON" | jq -r --arg n "$required" '.check_runs[] | select(.name == $n) | .conclusion' | tail -n 1)
+              status=$(echo "$JSON" | jq -r --arg n "$required" '.check_runs[] | select(.name == $n) | .status' | tail -n 1)
+
+              if [ -z "$conclusion" ] || [ "$conclusion" = "null" ]; then
+                echo "PENDING: $required (not reported yet)"
+                all_done=false
+                continue
+              fi
+
+              echo "$required => status=$status conclusion=$conclusion"
+
+              if [ "$status" != "completed" ]; then
+                all_done=false
+              fi
+
+              if [ "$conclusion" != "success" ]; then
+                all_pass=false
+              fi
+            done
+
+            if [ "$all_done" = true ]; then
+              if [ "$all_pass" = true ]; then
+                echo "PASS: every required governance check completed successfully."
+                exit 0
+              fi
+
+              echo "BLOCK: at least one required governance check is not successful."
+              exit 1
+            fi
+
+            sleep 30
+          done
+
+          echo "BLOCK: timeout waiting for all required governance checks."
+          exit 1
