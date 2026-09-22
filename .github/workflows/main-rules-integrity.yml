@@ -1,0 +1,46 @@
+name: Main Rules Policy Integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-main-rules:
+    name: Main Rules Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout policy
+        uses: actions/checkout@v4
+
+      - name: Verify fail-closed rules policy
+        run: |
+          set -euo pipefail
+          POLICY=ops/github/main-ruleset.json
+          test -f "$POLICY" || { echo "BLOCK: policy file missing"; exit 1; }
+          jq -e '
+            .name == "dIAno-main-fail-closed" and
+            .target == "branch" and
+            .enforcement == "active" and
+            (.bypass_actors | length == 0) and
+            (.conditions.ref_name.include | index("refs/heads/main")) and
+            any(.rules[]; .type == "pull_request" and
+              .parameters.required_approving_review_count == 1 and
+              .parameters.dismiss_stale_reviews_on_push == true and
+              .parameters.required_review_thread_resolution == true) and
+            any(.rules[]; .type == "required_status_checks" and
+              .parameters.strict_required_status_checks_policy == true and
+              any(.parameters.required_status_checks[]?;
+                .context == "Required Governance Checks")) and
+            any(.rules[]; .type == "non_fast_forward") and
+            any(.rules[]; .type == "deletion")
+          ' "$POLICY" >/dev/null || {
+            echo "BLOCK: fail-closed rules policy is invalid."
+            exit 1
+          }
+          echo "PASS: main fail-closed rules policy is valid."
