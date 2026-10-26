@@ -6,15 +6,15 @@ AI/game architecture for governed execution, graph-based cognition and verifiabl
 
 ## Governança VUA + FlyWire
 
-- VUA: installed from `github:scoobiii/vua` in CI.
+- VUA: github:scoobiii/vua.
 - CI: lint + 100% governance coverage + VUA mock detector + VUA conformance + VUC proof gate.
-- Proof contract: `execution=true` + Ed25519 signature + input/output SHA-256 hashes.
-- FlyWire source: `flyconnectome/flywire_annotations`, with release provenance tracked in architecture docs.
+- Proof contract: execution=true + Ed25519 signature + input/output SHA-256 hashes.
+- FlyWire source: flyconnectome/flywire_annotations, with release provenance tracked in architecture docs.
 - Graph rule: uma sinapse é uma aresta com origem, destino e proveniência; nunca uma saída sintética.
 
 ### Evolução automática
 
-O workflow de governança verifica e sincroniza este bloco e os documentos de arquitetura conforme o projeto evolui. Mudanças geradas passam por PR/CI.
+O workflow verifica e sincroniza este bloco e os documentos de arquitetura conforme o projeto evolui. Mudanças geradas passam por PR/CI.
 
 <!-- VUA-GOVERNANCE:END -->
 
